@@ -79,6 +79,7 @@
     },
     "device_id": {
       "type": "string",
+      "description": "The device to launch on, passed to the Flutter tool as `-d <device_id>`. Ignored if toolArgs already contains -d/--device-id. If unset, Flutter auto-picks a device.",
       "examples": [
         "chrome",
         "edge",
