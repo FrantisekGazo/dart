@@ -96,6 +96,11 @@ impl zed::Extension for DartExtension {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
+        let test_mode = user_config
+            .get("testMode")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+
         // Get debug_mode from user config (flutter or dart)
         let debug_mode = user_config
             .get("type")
@@ -106,12 +111,17 @@ impl zed::Extension for DartExtension {
         let tool = tool_binary(debug_mode);
 
         let (command, arguments) = if use_fvm {
-            (
-                "fvm".to_string(),
-                vec![tool.to_string(), "debug_adapter".to_string()],
-            )
+            let mut args = vec![tool.to_string(), "debug_adapter".to_string()];
+            if test_mode {
+                args.push("--test".to_string());
+            }
+            ("fvm".to_string(), args)
         } else {
-            (tool.to_string(), vec!["debug_adapter".to_string()])
+            let mut args = vec!["debug_adapter".to_string()];
+            if test_mode {
+                args.push("--test".to_string());
+            }
+            (tool.to_string(), args)
         };
 
         let device_id = user_config.get("deviceId").and_then(|v| v.as_str());
@@ -160,7 +170,7 @@ impl zed::Extension for DartExtension {
         // which is the only path the DAP actually honors. Only inject when the
         // user set `deviceId` explicitly and did not already pass a device via
         // `toolArgs` — otherwise leave selection to Flutter's auto-pick.
-        if debug_mode == "flutter" {
+        if debug_mode == "flutter" && !test_mode {
             if let Some(id) = device_id {
                 let has_device_arg = tool_args
                     .iter()
