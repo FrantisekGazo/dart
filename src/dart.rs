@@ -114,7 +114,7 @@ impl zed::Extension for DartExtension {
             (tool.to_string(), vec!["debug_adapter".to_string()])
         };
 
-        let device_id = user_config.get("device_id").and_then(|v| v.as_str());
+        let device_id = user_config.get("deviceId").and_then(|v| v.as_str());
 
         let platform = user_config
             .get("platform")
@@ -158,7 +158,7 @@ impl zed::Extension for DartExtension {
         // Flutter's DAP does not read the top-level `deviceId` field, so the
         // device id must be forwarded via `toolArgs` (`flutter run -d <id>`),
         // which is the only path the DAP actually honors. Only inject when the
-        // user set `device_id` explicitly and did not already pass a device via
+        // user set `deviceId` explicitly and did not already pass a device via
         // `toolArgs` — otherwise leave selection to Flutter's auto-pick.
         if debug_mode == "flutter" {
             if let Some(id) = device_id {
