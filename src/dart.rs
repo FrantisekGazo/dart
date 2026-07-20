@@ -114,10 +114,7 @@ impl zed::Extension for DartExtension {
             (tool.to_string(), vec!["debug_adapter".to_string()])
         };
 
-        let device_id = user_config
-            .get("device_id")
-            .and_then(|v| v.as_str())
-            .unwrap_or("chrome");
+        let device_id = user_config.get("deviceId").and_then(|v| v.as_str());
 
         let platform = user_config
             .get("platform")
@@ -147,7 +144,7 @@ impl zed::Extension for DartExtension {
             .and_then(|v| v.as_str())
             .unwrap_or("debug");
 
-        let tool_args = user_config
+        let mut tool_args = user_config
             .get("toolArgs")
             .and_then(|v| v.as_array())
             .map(|arr| {
@@ -157,6 +154,23 @@ impl zed::Extension for DartExtension {
                     .collect::<Vec<String>>()
             })
             .unwrap_or_default();
+
+        // Flutter's DAP does not read the top-level `deviceId` field, so the
+        // device id must be forwarded via `toolArgs` (`flutter run -d <id>`),
+        // which is the only path the DAP actually honors. Only inject when the
+        // user set `deviceId` explicitly and did not already pass a device via
+        // `toolArgs` — otherwise leave selection to Flutter's auto-pick.
+        if debug_mode == "flutter" {
+            if let Some(id) = device_id {
+                let has_device_arg = tool_args
+                    .iter()
+                    .any(|arg| arg == "-d" || arg.starts_with("--device-id"));
+                if !has_device_arg {
+                    tool_args.push("-d".to_string());
+                    tool_args.push(id.to_string());
+                }
+            }
+        }
 
         let env = user_config
             .get("env")
@@ -177,7 +191,6 @@ impl zed::Extension for DartExtension {
             "cwd": cwd.clone().unwrap_or_default(),
             "args": args,
             "flutterMode": flutter_mode,
-            "deviceId": device_id,
             "platform": platform,
             "stopOnEntry": stop_on_entry,
             "sendLogsToClient": true
@@ -185,6 +198,12 @@ impl zed::Extension for DartExtension {
 
         if let Some(uri) = vm_service_uri {
             config_json["vmServiceUri"] = json!(uri);
+        }
+
+        // Kept for forward-compat in case Flutter's DAP ever reads it; only
+        // emitted when the user set a device explicitly.
+        if let Some(id) = device_id {
+            config_json["deviceId"] = json!(id);
         }
 
         if !tool_args.is_empty() {

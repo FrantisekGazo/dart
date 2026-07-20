@@ -77,8 +77,9 @@
       "description": "The Flutter mode to use.",
       "default": "debug"
     },
-    "device_id": {
+    "deviceId": {
       "type": "string",
+      "description": "The device to launch on, passed to the Flutter tool as `-d <deviceId>`. Ignored if toolArgs already contains -d/--device-id. If unset, Flutter auto-picks a device.",
       "examples": [
         "chrome",
         "edge",
